@@ -7,6 +7,7 @@ jobs:
   restore-cache-job:
     runs-on: ubuntu-latest
     steps:
+      # This step tries to find and restore a cache with the predictable key.
       - name: Attempt to restore cache with a PREDICTABLE key
         id: cache-restore-step
         uses: actions/cache/restore@v4
@@ -14,15 +15,16 @@ jobs:
           # Use the EXACT SAME key as the private repo
           key: my-org-cross-repo-test-cache-v1
           path: ./my-secret-cache-dir
-      
+
+      # This step checks the result of the step above using correct shell syntax.
       - name: Check if the cache was restored and if secret exists
         run: |
-          if: ${{ steps.cache-restore-step.outputs.cache-hit == 'true' }}
-          echo "SUCCESS: Cache HIT! The private cache was accessible."
-          echo "Secret file content:"
-          cat ./my-secret-cache-dir/secret.txt
-          exit 1 # Fail the job to make the success obvious
-          
-          echo "FAILURE: Cache MISS. The private cache was NOT accessible."
-          echo "The directory 'my-secret-cache-dir' might not even exist."
-          ls -la
+          if [ "${{ steps.cache-restore-step.outputs.cache-hit }}" == "true" ]; then
+            echo "!!! VULNERABILITY FOUND: Cache HIT! The private cache was accessible."
+            echo "Secret file content:"
+            cat ./my-secret-cache-dir/secret.txt
+            exit 1 # Fail the job to make the success of the attack obvious
+          else
+            echo "✅ SUCCESS (Test Passed): Cache MISS. The security boundary held."
+            echo "The private cache was NOT accessible, as expected."
+          fi
