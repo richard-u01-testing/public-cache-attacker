@@ -1,0 +1,28 @@
+name: 'Attempt to Access Secret Cache'
+
+on:
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  restore-cache-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attempt to restore cache with a PREDICTABLE key
+        id: cache-restore-step
+        uses: actions/cache/restore@v4
+        with:
+          # Use the EXACT SAME key as the private repo
+          key: my-org-cross-repo-test-cache-v1
+          path: ./my-secret-cache-dir
+      
+      - name: Check if the cache was restored and if secret exists
+        run: |
+          if: ${{ steps.cache-restore-step.outputs.cache-hit == 'true' }}
+          echo "SUCCESS: Cache HIT! The private cache was accessible."
+          echo "Secret file content:"
+          cat ./my-secret-cache-dir/secret.txt
+          exit 1 # Fail the job to make the success obvious
+          
+          echo "FAILURE: Cache MISS. The private cache was NOT accessible."
+          echo "The directory 'my-secret-cache-dir' might not even exist."
+          ls -la
